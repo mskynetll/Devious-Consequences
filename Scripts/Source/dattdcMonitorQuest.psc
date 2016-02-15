@@ -76,21 +76,56 @@ Function Maintenance()
 	LastPeriodicUpdate = Utility.GetCurrentGameTime()
 	RegisterForSingleUpdateGameTime(1.0)
 	ShouldIgnoreEquippedFlag = false
+
+	If(ConsequenceEffects.SlutCollarKeyword == None)
+		ConsequenceEffects.SlutCollarKeyword = Keyword.GetKeyword("dcur_kw_slutcollar")
+	EndIf
+
+	If(ConsequenceEffects.RubberSuitKeyword == None)
+		ConsequenceEffects.RubberSuitKeyword = Keyword.GetKeyword("dcur_kw_isrubbersuit")
+	EndIf
+
+	If(ConsequenceEffects.FakeCatsuitKeyword == None)
+		ConsequenceEffects.FakeCatsuitKeyword = Keyword.GetKeyword("dcur_kw_lb_fakecatsuit")
+	EndIf
+
+	If(ConsequenceEffects.DollmakerCatsuitKeyword == None)
+		ConsequenceEffects.DollmakerCatsuitKeyword = Keyword.GetKeyword("dcur_kw_dollmaker_rubber")
+	EndIf
+
+	If(ConsequenceEffects.ShacklesKeyword == None)
+		ConsequenceEffects.ShacklesKeyword = Keyword.GetKeyword("dcur_kw_lb_shackles")
+	EndIf	
+
+	If(ConsequenceEffects.WristShacklesKeyword == None)
+		ConsequenceEffects.WristShacklesKeyword = Keyword.GetKeyword("dcur_kw_wristshackles")
+	EndIf
+
+	If(ConsequenceEffects.OpenRubberGlovesKeyword == None)
+		ConsequenceEffects.OpenRubberGlovesKeyword = Keyword.GetKeyword("dcur_kw_openrubbergloves")
+	EndIf
+
+	If(ConsequenceEffects.SimpleRubberGlovesKeyword == None)
+		ConsequenceEffects.SimpleRubberGlovesKeyword = Keyword.GetKeyword("dcur_kw_simplerubbergloves")
+	EndIf
 EndFunction
 
 Event OnFixDeviceBuffs()
 	NotifyEventIfNeeded("OnFixDeviceBuffs")
-	ApplyDeviceEffects(false)
+	ConsequenceEffects.ApplyDeviceEffectsAsNeeded()
+	Debug.Notification("Fixing device effects...")
 EndEvent
 
 Event OnEnableDeviceBuffs()
 	NotifyEventIfNeeded("OnEnableDeviceBuffs")
 	ApplyDeviceEffects(true)
+	Debug.Notification("Enabled device effects...")
 EndEvent
 
 Event OnDisableDeviceBuffs()
 	NotifyEventIfNeeded("OnDisableDeviceBuffs")
 	RemoveDeviceEffects(true)
+	Debug.Notification("Disabled device effects...")
 EndEvent
 
 Event OnDeviceVibrateEffectStart(string eventName, string argString, float argNum, form sender)
@@ -121,6 +156,7 @@ Event OnGagPanelStateChange(string eventName, string argString, float argNum, fo
 		If (argNum == 0) ; Open
 			If(Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell))
 				Libs.PlayerRef.RemoveSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
+				Libs.PlayerRef.DispelSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
 			EndIf			
 		ElseIf (argNum == 1) ;Closed
 			If(!Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell))
@@ -135,8 +171,7 @@ EndEvent
 
 Function NotifyEventIfNeeded(string eventName)
 	If(ShowDebugMessages)
-		Debug.Notification("Devious Consequences -> " + eventName)
-		;Debug.MessageBox("Devious Consequences -> " + eventName)
+		Debug.Trace("Devious Consequences -> " + eventName)
 	EndIf
 EndFunction
 
@@ -144,8 +179,8 @@ Event OnRubberHoodEquipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsRubberHoodEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		
 		NotifyEventIfNeeded(eventName)
 	EndIf	
 EndEvent
@@ -154,6 +189,7 @@ Event OnRubberHoodUnequipped(string eventName, string strArg, float numArg, Form
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsRubberHoodEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)		
@@ -164,9 +200,10 @@ Event OnHarnessEquipped(string eventName, string strArg, float numArg, Form send
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsHarnessEquipped = true
+			IncrementDeviceCount()
 		EndIf
 
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.HarnessWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.HarnessWearSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.HarnessWearSpell, false)
 		EndIf
 
@@ -178,10 +215,12 @@ Event OnHarnessUnequipped(string eventName, string strArg, float numArg, Form se
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsHarnessEquipped = false
+			DecrementDeviceCount()
 		EndIf
 
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.HarnessWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.HarnessWearSpell))
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.HarnessWearSpell)
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.HarnessWearSpell)
 		EndIf
 
 		NotifyEventIfNeeded(eventName)
@@ -192,6 +231,7 @@ Event OnRubberSuitEquipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsRubberSuitEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -202,6 +242,7 @@ Event OnRubberSuitUnequipped(string eventName, string strArg, float numArg, Form
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsRubberSuitEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)		
@@ -212,8 +253,9 @@ Event OnBalletBootsEquipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsBalletBootsEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			balletBootsWearTime = Utility.GetCurrentGameTime()
 			If(!Libs.PlayerRef.HasSpell(ConsequenceEffects.BalletBootsWearSpell))
 				Libs.PlayerRef.AddSpell(ConsequenceEffects.BalletBootsWearSpell,false)	
@@ -228,13 +270,17 @@ Event OnBalletBootsUnequipped(string eventName, string strArg, float numArg, For
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsBalletBootsEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			float hoursPassed = Math.abs(Utility.GetCurrentGameTime() - balletBootsWearTime) * 24.0
 			dattBalletBootsWearDuration.SetValue(hoursPassed)
 			dattBalletBootsWearCumulativeDuration.Mod(hoursPassed)
-			ConsequenceEffects.BalletBootsRemovedSpell.Cast(Libs.PlayerRef, None)
+			If(DeviceBuffsEnabled)
+				ConsequenceEffects.BalletBootsRemovedSpell.Cast(Libs.PlayerRef, None)
+			EndIf
 			If(Libs.PlayerRef.HasSpell(ConsequenceEffects.BalletBootsWearSpell))			
+				Libs.PlayerRef.DispelSpell(ConsequenceEffects.BalletBootsWearSpell)
 				Libs.PlayerRef.RemoveSpell(ConsequenceEffects.BalletBootsWearSpell)	
 			EndIf
 		EndIf
@@ -247,8 +293,9 @@ Event OnAnalPlugEquipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsAnalPlugEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.ButtPlugWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.ButtPlugWearSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.ButtPlugWearSpell,false)	
 		EndIf
 		
@@ -260,8 +307,10 @@ Event OnAnalPlugUnequipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsAnalPlugEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.ButtPlugWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.ButtPlugWearSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.ButtPlugWearSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.ButtPlugWearSpell)
 		EndIf
 
@@ -273,6 +322,7 @@ Event OnVaginalPlugEquipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsVaginalPlugEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -283,6 +333,7 @@ Event OnVaginalPlugUnequipped(string eventName, string strArg, float numArg, For
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)
 			ConsequenceEffects.IsVaginalPlugEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -293,6 +344,7 @@ Event OnBeltEquipped(string eventName, string strArg, float numArg, Form sender)
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsBeltEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -303,6 +355,7 @@ Event OnBeltUnequipped(string eventName, string strArg, float numArg, Form sende
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsBeltEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -313,6 +366,7 @@ Event OnChastityBraEquipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsChastityBraEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -323,6 +377,7 @@ Event OnChastityBraUnequipped(string eventName, string strArg, float numArg, For
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsChastityBraEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -333,6 +388,7 @@ Event OnNipplePiercingEquipped(string eventName, string strArg, float numArg, Fo
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsNipplePiercingEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -343,6 +399,7 @@ Event OnNipplePiercingUnequipped(string eventName, string strArg, float numArg, 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsNipplePiercingEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -353,6 +410,7 @@ Event OnClitPiercingEquipped(string eventName, string strArg, float numArg, Form
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsClitPiercingEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -363,6 +421,7 @@ Event OnClitPiercingUnequipped(string eventName, string strArg, float numArg, Fo
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsClitPiercingEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -373,8 +432,9 @@ Event OnCollarEquipped(string eventName, string strArg, float numArg, Form sende
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsCollarEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.CollarWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.CollarWearSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.CollarWearSpell, false)
 		EndIf
 
@@ -386,8 +446,10 @@ Event OnCollarUnequipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsCollarEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.CollarWearSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.CollarWearSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.CollarWearSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.CollarWearSpell)
 		EndIf
 		
@@ -399,6 +461,7 @@ Event OnLegCuffsEquipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsLegCuffsEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -409,6 +472,7 @@ Event OnLegCuffsUnequipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsLegCuffsEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -419,6 +483,7 @@ Event OnArmCuffsEquipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsArmCuffsEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -429,6 +494,7 @@ Event OnArmCuffsUnequipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsArmCuffsEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -439,6 +505,7 @@ Event OnShacklesEquipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsShacklesEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -449,6 +516,7 @@ Event OnShacklesUnequipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsShacklesEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -459,6 +527,7 @@ Event OnBlindfoldEquipped(string eventName, string strArg, float numArg, Form se
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsBlindfoldEquipped = true
+			IncrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -469,6 +538,7 @@ Event OnBlindfoldUnequipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsBlindfoldEquipped = false
+			DecrementDeviceCount()
 		EndIf
 		
 		NotifyEventIfNeeded(eventName)
@@ -479,8 +549,9 @@ Event OnGagEquipped(string eventName, string strArg, float numArg, Form sender)
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsGagEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			gagWearTime = Utility.GetCurrentGameTime()
 			If(!Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearSpell))
 				Libs.PlayerRef.AddSpell(ConsequenceEffects.GagWearSpell,false)
@@ -489,6 +560,7 @@ Event OnGagEquipped(string eventName, string strArg, float numArg, Form sender)
 				Libs.PlayerRef.AddSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell,false)				
 			ElseIf (Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell) && Libs.PlayerRef.WornHasKeyword(Libs.Zad.zad_PermitOral) == true)
 				;this code path is precaution and should not happen
+				Libs.PlayerRef.DispelSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
 				Libs.PlayerRef.RemoveSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
 				If(ShowDebugMessages)
 					Debug.Notification("gag with zad_PermitOral flag == true, and GagWearWithBlockedMouthSpell was active... should not happen!")
@@ -504,16 +576,22 @@ Event OnGagUnequipped(string eventName, string strArg, float numArg, Form sender
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsGagEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			If(Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearSpell))
+				Libs.PlayerRef.DispelSpell(ConsequenceEffects.GagWearSpell)
 				Libs.PlayerRef.RemoveSpell(ConsequenceEffects.GagWearSpell)
 			EndIf
 			If(Libs.PlayerRef.HasSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell))
+				Libs.PlayerRef.DispelSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
 				Libs.PlayerRef.RemoveSpell(ConsequenceEffects.GagWearWithBlockedMouthSpell)
 			EndIf
 			dattGagWearDuration.SetValue(Math.abs(Utility.GetCurrentGameTime() - gagWearTime) * 24.0)
-			ConsequenceEffects.GagRemovedSpell.Cast(Libs.PlayerRef, None)
+
+			If(DeviceBuffsEnabled)
+				ConsequenceEffects.GagRemovedSpell.Cast(Libs.PlayerRef, None)
+			EndIf
 		EndIf
 
 		NotifyEventIfNeeded(eventName)
@@ -528,8 +606,9 @@ Event OnRigidCorsetEquipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsRigidCorsetEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.RigidCorsetSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.RigidCorsetSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.RigidCorsetSpell)
 		EndIf
 		
@@ -541,8 +620,10 @@ Event OnRigidCorsetUnequipped(string eventName, string strArg, float numArg, For
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsRigidCorsetEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.RigidCorsetSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.RigidCorsetSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.RigidCorsetSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.RigidCorsetSpell)
 		EndIf
 		
@@ -554,8 +635,9 @@ Event OnCorsetEquipped(string eventName, string strArg, float numArg, Form sende
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsCorsetEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.CorsetSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.CorsetSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.CorsetSpell)
 		EndIf
 		
@@ -567,8 +649,10 @@ Event OnCorsetUnequipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsCorsetEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.CorsetSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.CorsetSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.CorsetSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.CorsetSpell)
 		EndIf
 
@@ -580,8 +664,9 @@ Event OnArmbinderEquipped(string eventName, string strArg, float numArg, Form se
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsArmbinderEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			armbinderWearTime = Utility.GetCurrentGameTime()
 		EndIf
 				
@@ -593,11 +678,13 @@ Event OnArmbinderUnequipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsArmbinderEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag))
 			dattArmbinderWearDuration.SetValue(Math.abs(Utility.GetCurrentGameTime() - armbinderWearTime) * 24.0)
-			ConsequenceEffects.ArmbinderRemoveSpell.Cast(Libs.PlayerRef, None)
-			
+			If(DeviceBuffsEnabled)
+				ConsequenceEffects.ArmbinderRemoveSpell.Cast(Libs.PlayerRef, None)
+			EndIf		
 			armbinderWearTime = 0.0 ;just in case
 		EndIf
 
@@ -609,8 +696,9 @@ Event OnSlaveBootsEquipped(string eventName, string strArg, float numArg, Form s
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsSlaveBootsEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveBootsSpell))		
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveBootsSpell))		
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.SlaveBootsSpell)
 		EndIf
 		NotifyEventIfNeeded(eventName)
@@ -621,8 +709,10 @@ Event OnSlaveBootsUnequipped(string eventName, string strArg, float numArg, Form
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsSlaveBootsEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveBootsSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveBootsSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.SlaveBootsSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.SlaveBootsSpell)
 		EndIf
 		
@@ -634,8 +724,9 @@ Event OnPonyBootsEquipped(string eventName, string strArg, float numArg, Form se
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsPonyBootsEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.PonyBootsSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.PonyBootsSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.PonyBootsSpell)
 		EndIf
 		
@@ -647,8 +738,10 @@ Event OnPonyBootsUnequipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsPonyBootsEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.PonyBootsSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.PonyBootsSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.PonyBootsSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.PonyBootsSpell)
 		EndIf
 		
@@ -660,8 +753,9 @@ Event OnSlaveGlovesEquipped(string eventName, string strArg, float numArg, Form 
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsSlaveGlovesEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && !Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveGlovesSpell))
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveGlovesSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.SlaveGlovesSpell)
 		EndIf
 		
@@ -673,8 +767,10 @@ Event OnSlaveGlovesUnequipped(string eventName, string strArg, float numArg, For
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsSlaveGlovesEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled && Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveGlovesSpell) )
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.SlaveGlovesSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.SlaveGlovesSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.SlaveGlovesSpell)
 		EndIf
 		
@@ -696,8 +792,9 @@ Event OnRubberEquipped(string eventName, string strArg, float numArg, Form sende
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsRubberGlovesEquipped = true
+			IncrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && !Libs.PlayerRef.HasSpell(ConsequenceEffects.RubberGlovesSpell))
 			Libs.PlayerRef.AddSpell(ConsequenceEffects.RubberGlovesSpell)
 		EndIf
 		
@@ -709,8 +806,10 @@ Event OnRubberUnequipped(string eventName, string strArg, float numArg, Form sen
 	If(numArg == 1.0) ;"is player" flag
 		If(ShouldIgnoreEquippedFlag == false)	
 			ConsequenceEffects.IsRubberGlovesEquipped = false
+			DecrementDeviceCount()
 		EndIf
-		If(DeviceBuffsEnabled)
+		If((DeviceBuffsEnabled || ShouldIgnoreEquippedFlag) && Libs.PlayerRef.HasSpell(ConsequenceEffects.RubberGlovesSpell))
+			Libs.PlayerRef.DispelSpell(ConsequenceEffects.RubberGlovesSpell)
 			Libs.PlayerRef.RemoveSpell(ConsequenceEffects.RubberGlovesSpell)
 		EndIf
 		
@@ -731,35 +830,19 @@ Function DecrementDeviceCount()
 EndFunction
 
 Function ApplyDeviceEffects(bool ignoreEquippedFlag)
-	Int numItems = Libs.PlayerRef.GetNumItems()
-	Int i = 0
 	bool originalShouldIgnoreEquippedFlag = ShouldIgnoreEquippedFlag
 	ShouldIgnoreEquippedFlag = ignoreEquippedFlag
-	While (i < numItems)
-		Armor armorItem = Libs.PlayerRef.GetNthForm(i) as Armor
-		If (armorItem)
-			If Libs.PlayerRef.IsEquipped(armorItem)
-				ConsequenceEffects.CheckAndEquipArmorEffects(armorItem)
-			EndIf
-		EndIf
-		i += 1
-	EndWhile
+	
+	ConsequenceEffects.ApplyDeviceEffectsAsNeeded()
+
 	ShouldIgnoreEquippedFlag = originalShouldIgnoreEquippedFlag
 EndFunction 
 
 Function RemoveDeviceEffects(bool ignoreEquippedFlag)
-	Int numItems = Libs.PlayerRef.GetNumItems()
-	Int i = 0
 	bool originalShouldIgnoreEquippedFlag = ShouldIgnoreEquippedFlag
 	ShouldIgnoreEquippedFlag = ignoreEquippedFlag
-	While (i < numItems)
-		Armor armorItem = Libs.PlayerRef.GetNthForm(i) as Armor
-		If (armorItem)
-			If Libs.PlayerRef.IsEquipped(armorItem)
-				ConsequenceEffects.CheckAndUnequipArmorEffects(armorItem)
-			EndIf
-		EndIf
-		i += 1
-	EndWhile
+
+	ConsequenceEffects.RemoveDeviceEffectsAsNeeded()
+
 	ShouldIgnoreEquippedFlag = originalShouldIgnoreEquippedFlag
 EndFunction 

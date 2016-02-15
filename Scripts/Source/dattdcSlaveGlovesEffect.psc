@@ -2,20 +2,21 @@ Scriptname dattdcSlaveGlovesEffect extends ActiveMagicEffect
 
 Actor Property PlayerRef Auto
 
-Event OnEffectStart(Actor akTarget, Actor akCaster)
-	float multiplier = (GetMagnitude() / 100.0) * 0.75
+Float Property Multiplier Auto Hidden
 
-	PlayerRef.ModAV("OneHanded", -1 * multiplier)
-	PlayerRef.ModAV("TwoHanded", -1 * multiplier)
-	PlayerRef.ModAV("Marksman", -1 * multiplier)
+Event OnEffectStart(Actor akTarget, Actor akCaster)
+	Multiplier = (GetMagnitude() / 100.0) * 0.75
+
+	PlayerRef.ModAV("OneHanded", -1 * Multiplier)
+	PlayerRef.ModAV("TwoHanded", -1 * Multiplier)
+	PlayerRef.ModAV("Marksman", -1 * Multiplier)
 
 EndEvent
 
 
 Event OnEffectFinish(Actor akTarget, Actor akCaster)
-	float multiplier = (GetMagnitude() / 100.0) * 0.75
 
-	PlayerRef.ModAV("OneHanded", multiplier)
-	PlayerRef.ModAV("TwoHanded", multiplier)
-	PlayerRef.ModAV("Marksman", multiplier)	
+	PlayerRef.ModAV("OneHanded", Multiplier)
+	PlayerRef.ModAV("TwoHanded", Multiplier)
+	PlayerRef.ModAV("Marksman", Multiplier)	
 EndEvent
